@@ -1,9 +1,8 @@
-#[allow(dead_code)]
-
+#![allow(dead_code)]
 #[derive(Debug)]
 struct Person {
     name: String,
-    age: u16
+    age: u16,
 }
 
 impl Person {
@@ -16,19 +15,18 @@ impl Person {
 struct Book {
     title: String,
     author: String,
-    is_available: bool
+    is_available: bool,
 }
 
 impl Book {
     fn new(title: String, author: String, is_available: bool) -> Self {
         Self { title, author, is_available }
     }
-
 }
 
 #[derive(Debug)]
 struct Library {
-    books: Vec<Book>
+    books: Vec<Book>,
 }
 
 impl Library {
@@ -45,7 +43,7 @@ impl Library {
     }
 }
 
-fn main() {
+pub fn run() {
     println!("Hello, world!");
     let person = Person::new(String::from("Dharan"), 25);
     let mut library = Library::new();
