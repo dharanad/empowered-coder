@@ -1,4 +1,9 @@
 #![allow(dead_code)]
+
+use std::collections::HashMap;
+use std::f32::consts::E;
+use std::fmt::format;
+
 #[derive(Debug)]
 struct Person {
     name: String,
@@ -27,30 +32,93 @@ impl Book {
 #[derive(Debug)]
 struct Library {
     books: Vec<Book>,
+    borrower_map: HashMap<String, String>
 }
 
 impl Library {
     fn new() -> Self {
-        Self { books: Vec::new() }
+        Self { books: Vec::new(), borrower_map: HashMap::new() }
     }
-    fn add_book(&mut self, book: Book) {
-        self.books.push(book)
+    fn add_book(&mut self, title: String, author: String) {
+        let book = Book::new(title, author, true);
+        self.books.push(book);
     }
-    fn print_books(&mut self) {
-        for i in 0..self.books.len() {
-            println!("{:?}", self.books.get(i))
+    fn print_books(&self) {
+        for b in self.books.iter() {
+            println!("{:?}", b)
         }
     }
+
+    fn checkout_book(&mut self, title: &String, borrower_name: &String) -> Result<&Book, String> {
+        let _book = match self.books.iter_mut().find(|x| { x.title.eq(title)}) {
+            Some(book) => book,
+            None => return Err(format!("{} book not found", title))
+        };
+        return match _book.is_available {
+            true => {
+                Library::set_book_availability(_book, false);
+                self.borrower_map.insert(title.to_string(), borrower_name.to_string());
+                Ok(_book)
+            }
+            false => {
+                Err(format!("Book {} is already checked out.", title))
+            }
+        }
+    }
+
+    fn return_book(&mut self, book: &Book) -> Result<(), String>{
+        let _book = match self.books.iter_mut().find(|x| x.title == book.title) {
+            Some(b) => b,
+            None => return Err(format!("Book {} not found", book.title))
+        };
+        return match _book.is_available {
+            false => {
+                self.borrower_map.remove(&_book.title);
+                Library::set_book_availability(_book, true);
+                Ok(())
+            }
+            _ => Ok(())
+        }
+    }
+
+    fn list_available_books(&self) {
+        self.books.iter()
+            .filter(|x| {x.is_available == true})
+            .for_each(|y| {println!("Title : {}, Author: {}", y.title, y.author)})
+    }
+
+    fn list_checked_out_books(&self) {
+        self.books.iter()
+            .filter(|x| {x.is_available == false})
+            .for_each(|y| {
+                let borrower_name = match self.borrower_map.get(&y.title) {
+                    Some(z) => z,
+                    None => "No Borrower"
+                };
+                println!("Title : {}, Borrowed By: {}", y.title, borrower_name)
+            })
+    }
+
+    fn set_book_availability(book: &mut Book, value: bool) {
+        book.is_available = value
+    }
+
 }
 
 pub fn run() {
-    println!("Hello, world!");
     let person = Person::new(String::from("Dharan"), 25);
+    display_person_info(&person);
     let mut library = Library::new();
-    let harry_porter = Book::new(
-        String::from("Harry Porter"),
-        String::from("JK Rowling"),
-        true);
-    library.add_book(harry_porter);
-    library.print_books()
+
+
+    let book = library.add_book(String::from("Harry Porter"),
+                     String::from("JK Rowling"));
+    library.list_available_books();
+    let book = library.checkout_book(&String::from("Harry Porter"), &person.name);
+    library.list_checked_out_books();
+    library.list_available_books()
+}
+
+fn display_person_info(p: &Person) {
+    println!("Person(name: {}, age: {})", p.name, p.age)
 }
