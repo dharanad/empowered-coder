@@ -47,7 +47,7 @@ impl Library {
         }
     }
 
-    fn checkout_book(&mut self, title: &String, borrower_name: &String) -> Result<(), String> {
+    fn borrow_book(&mut self, title: &String, borrower_name: &String) -> Result<(), String> {
         let _book = match self.books.iter_mut().find(|x| { x.title.eq(title)}) {
             Some(book) => book,
             None => return Err(format!("{} book not found", title))
@@ -112,7 +112,7 @@ pub fn run() {
     let book = library.add_book(String::from("Harry Porter"),
                      String::from("JK Rowling"));
     library.list_available_books();
-    library.checkout_book(&String::from("Harry Porter"), &person.name).expect("Err checking out book");
+    library.borrow_book(&String::from("Harry Porter"), &person.name).expect("Err checking out book");
     library.list_checked_out_books();
     library.return_book(&String::from("Harry Porter")).expect("Error returning book");
     library.list_available_books()
