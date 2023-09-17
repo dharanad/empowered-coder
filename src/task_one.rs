@@ -1,8 +1,6 @@
 #![allow(dead_code)]
 
 use std::collections::HashMap;
-use std::f32::consts::E;
-use std::fmt::format;
 
 #[derive(Debug)]
 struct Person {
@@ -49,7 +47,7 @@ impl Library {
         }
     }
 
-    fn checkout_book(&mut self, title: &String, borrower_name: &String) -> Result<&Book, String> {
+    fn checkout_book(&mut self, title: &String, borrower_name: &String) -> Result<(), String> {
         let _book = match self.books.iter_mut().find(|x| { x.title.eq(title)}) {
             Some(book) => book,
             None => return Err(format!("{} book not found", title))
@@ -58,7 +56,7 @@ impl Library {
             true => {
                 Library::set_book_availability(_book, false);
                 self.borrower_map.insert(title.to_string(), borrower_name.to_string());
-                Ok(_book)
+                Ok(())
             }
             false => {
                 Err(format!("Book {} is already checked out.", title))
@@ -66,10 +64,10 @@ impl Library {
         }
     }
 
-    fn return_book(&mut self, book: &Book) -> Result<(), String>{
-        let _book = match self.books.iter_mut().find(|x| x.title == book.title) {
+    fn return_book(&mut self, title: &String) -> Result<(), String>{
+        let _book = match self.books.iter_mut().find(|x| x.title == title.to_string()) {
             Some(b) => b,
-            None => return Err(format!("Book {} not found", book.title))
+            None => return Err(format!("Book {} not found", title))
         };
         return match _book.is_available {
             false => {
@@ -114,8 +112,9 @@ pub fn run() {
     let book = library.add_book(String::from("Harry Porter"),
                      String::from("JK Rowling"));
     library.list_available_books();
-    let book = library.checkout_book(&String::from("Harry Porter"), &person.name);
+    library.checkout_book(&String::from("Harry Porter"), &person.name).expect("Err checking out book");
     library.list_checked_out_books();
+    library.return_book(&String::from("Harry Porter")).expect("Error returning book");
     library.list_available_books()
 }
 
