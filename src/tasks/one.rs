@@ -110,7 +110,7 @@ pub fn run() {
 
 
     let book = library.add_book(String::from("Harry Porter"),
-                     String::from("JK Rowling"));
+                                String::from("JK Rowling"));
     library.list_available_books();
     library.borrow_book("Harry Porter", &person.name).expect("Err checking out book");
     library.list_checked_out_books();
