@@ -1,5 +1,5 @@
 pub mod one;
 mod two;
-mod three;
+pub mod three;
 
 // pub use one::run;
