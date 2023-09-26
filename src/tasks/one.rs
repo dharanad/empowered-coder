@@ -1,123 +1,154 @@
-#![allow(dead_code)]
+use std::fmt::{Display, Formatter, Pointer};
 
-use std::collections::HashMap;
-
-#[derive(Debug)]
+fn print_collection<T: std::fmt::Display>(collection : &[T]) {
+    collection.iter().for_each(|x| println!("{x}"))
+}
 struct Person {
     name: String,
-    age: u16,
+    age: u8
+}
+
+impl Display for Person {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Person({}, {})", self.name, self.age)
+    }
 }
 
 impl Person {
-    fn new(name: String, age: u16) -> Self {
-        Self { name, age }
+    fn info(&self) -> String {
+        format!("Name: {}, age: {}", self.name, self.age)
+    }
+
+    pub fn display(&self) {
+        println!("Person({})", self.info())
+    }
+
+    fn new(name: &str, age: u8) -> Self {
+        Self {name: name.to_string(), age }
     }
 }
 
-#[derive(Debug)]
 struct Book {
     title: String,
     author: String,
-    is_available: bool,
+    borrowed_by: Option<String>
 }
 
 impl Book {
-    fn new(title: String, author: String, is_available: bool) -> Self {
-        Self { title, author, is_available }
+    pub fn is_available(&self) -> bool {
+        return self.borrowed_by.is_none();
+    }
+
+    pub fn new(title: String, author: String) -> Self {
+        Self {title, author, borrowed_by: None}
+    }
+
+    pub fn set_borrower(&mut self, borrower_name: String) {
+        self.borrowed_by = Option::from(borrower_name);
+    }
+    pub fn remove_borrower(&mut self) {
+        self.borrowed_by = None
     }
 }
 
-#[derive(Debug)]
+impl Display for Book {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match &self.borrowed_by {
+            Some(by) => {
+                write!(f, "Book(Title = {}, Author = {}, BorrowedBy = {})", self.title, self.author, by)
+            }
+            None => {
+                write!(f, "Book({}, {})", self.title, self.author)
+            }
+        }
+    }
+}
 struct Library {
-    books: Vec<Book>,
-    borrower_map: HashMap<String, String>
+    name: String,
+    books: Vec<Book>
 }
 
 impl Library {
-    fn new() -> Self {
-        Self { books: Vec::new(), borrower_map: HashMap::new() }
+    fn list_book(&self, is_available: bool) -> Vec<&Book> {
+        self.books
+            .iter()
+            .filter(|x| x.is_available() == is_available)
+            .collect()
     }
-    fn add_book(&mut self, title: String, author: String) {
-        let book = Book::new(title, author, true);
-        self.books.push(book);
+
+    fn find_book(&mut self, title: &str) -> Option<&mut Book> {
+        self.books.iter_mut().filter(|x| {x.title == title}).last()
     }
-    fn print_books(&self) {
-        for b in self.books.iter() {
-            println!("{:?}", b)
+
+    pub fn list_available_books(&self) {
+        print_collection(&self.list_book(true));
+    }
+
+    pub fn list_borrowed_books(&self) {
+        print_collection(&self.list_book(false));
+    }
+
+    pub fn add_book(&mut self, b: Book) -> Result<(), String> {
+        self.books.push(b);
+        Ok(())
+    }
+
+    pub fn borrow_book(&mut self, title: &str, p: &Person) -> Result<&Book, String> {
+        match self.find_book(title) {
+            Some(b) => {
+                b.set_borrower(p.name.clone());
+                Ok(b)
+            }
+            None => {
+                Err(format!("err book {} not found", title))
+            }
         }
     }
 
-    fn borrow_book(&mut self, title: &str, borrower_name: &str) -> Result<(), String> {
-        let _book = match self.books.iter_mut().find(|x| { x.title.eq(title)}) {
-            Some(book) => book,
-            None => return Err(format!("{} book not found", title))
-        };
-        return match _book.is_available {
-            true => {
-                Library::set_book_availability(_book, false);
-                self.borrower_map.insert(title.to_string(), borrower_name.to_string());
-                Ok(())
+    pub fn return_book(&mut self, title: &str) -> Result<(), String> {
+        match self.find_book(title) {
+            Some(b) => {
+                if !b.is_available() {
+                    b.remove_borrower();
+                    Ok(())
+                } else {
+                    Err(format!("err book {} not borrowed", title))
+                }
             }
-            false => {
-                Err(format!("Book {} is already checked out.", title))
+            None => {
+                Err(format!("err book {} is not found", title))
             }
         }
     }
 
-    fn return_book(&mut self, title: &str) -> Result<(), String>{
-        let _book = match self.books.iter_mut().find(|x| x.title == title) {
-            Some(b) => b,
-            None => return Err(format!("Book {} not found", title))
-        };
-        return match _book.is_available {
-            false => {
-                self.borrower_map.remove(&_book.title);
-                Library::set_book_availability(_book, true);
-                Ok(())
-            }
-            _ => Ok(())
-        }
+    fn new(name: &str) -> Self {
+        Library{name: name.to_string(), books: Vec::new() }
     }
+}
 
-    fn list_available_books(&self) {
-        self.books.iter()
-            .filter(|x| {x.is_available == true})
-            .for_each(|y| {println!("Title : {}, Author: {}", y.title, y.author)})
+impl Display for Library {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Library({},count={})", self.name, self.books.len())
     }
-
-    fn list_checked_out_books(&self) {
-        self.books.iter()
-            .filter(|x| {x.is_available == false})
-            .for_each(|y| {
-                let borrower_name = match self.borrower_map.get(&y.title) {
-                    Some(z) => z,
-                    None => "No Borrower"
-                };
-                println!("Title : {}, Borrowed By: {}", y.title, borrower_name)
-            })
-    }
-
-    fn set_book_availability(book: &mut Book, value: bool) {
-        book.is_available = value
-    }
-
 }
 
 pub fn run() {
-    let person = Person::new(String::from("Dharan"), 25);
-    display_person_info(&person);
-    let mut library = Library::new();
-
-
-    let book = library.add_book(String::from("Harry Porter"),
-                                String::from("JK Rowling"));
+    let mut library = Library::new("Ashram Public School");
+    let person = Person::new("Dharan", 25);
+    let _ = library.add_book(Book::new("A".to_string(), "Dharan".to_string()));
+    let _ = library.add_book(Book::new("B".to_string(), "Satish".to_string()));
+    let _ = library.add_book(Book::new("C".to_string(), "Kiran".to_string()));
+    let _ = library.add_book(Book::new("D".to_string(), "BT".to_string()));
     library.list_available_books();
-    library.borrow_book("Harry Porter", &person.name).expect("Err checking out book");
-    library.list_checked_out_books();
-    library.return_book("Harry Porter").expect("Error returning book");
-    library.list_available_books()
-}
-
-fn display_person_info(p: &Person) {
-    println!("Person(name: {}, age: {})", p.name, p.age)
+    library.list_borrowed_books();
+    match library.borrow_book("A", &person) {
+        Ok(b) => {
+            library.list_borrowed_books();
+            let _ = library.return_book("A"); // if used borrowed book two mutable reference exists
+            library.list_borrowed_books()
+        }
+        Err(e) => {
+            library.list_available_books()
+        }
+    }
 }
